@@ -187,7 +187,7 @@ try:
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
     ##### 稼働と乗車画面 #####
-    if is_mobile_view:
+    if is_mobile_view(driver):
         selector = 'div[data-testid="responsive-mobile-nav"] button[aria-label="loggedIn drawer"]'
     else:
         selector = 'div[data-testid="responsive-desktop-nav"] button[aria-label="loggedIn drawer"]'

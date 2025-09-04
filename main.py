@@ -188,9 +188,9 @@ try:
 
     ##### 稼働と乗車画面 #####
     if is_mobile_view(driver):
-        selector = 'div[data-testid="responsive-mobile-nav"] button[aria-label="loggedIn drawer"]'
+        selector = 'div[data-testid="responsive-mobile-nav"] button[data-tracking-alias="loggedin drawer activated"]'
     else:
-        selector = 'div[data-testid="responsive-desktop-nav"] button[aria-label="loggedIn drawer"]'
+        selector = 'div[data-testid="responsive-desktop-nav"] button[data-tracking-alias="loggedin drawer activated"]'
 
     # ユーザメニューを表示
     user_menu = driver.find_elements(By.CSS_SELECTOR, selector)

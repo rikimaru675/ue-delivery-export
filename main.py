@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -16,6 +17,7 @@ import config
 TOPPAGE_URL = 'https://www.uber.com/global/ja/sign-in/'
 SMS_CODE_LEN = 4
 WAIT_TIMEOUT_SEC = 30
+PASSWORD_TIMEOUT_SEC = 3
 SLEEP_TIME_SEC = 3
 field_names = [
     'delivery_date',
@@ -170,10 +172,10 @@ try:
     debug_wait()
 
     ##### パスワード入力画面
-    passwords = driver.find_elements(By.ID, 'PASSWORD')
-    if passwords:
+    try:
         # パスワードの入力フォームがあればパスワードを入力する
-        passwords[0].send_keys(config.PASSWORD)
+        password = WebDriverWait(driver, PASSWORD_TIMEOUT_SEC).until(EC.presence_of_element_located((By.ID, 'PASSWORD')))
+        password.send_keys(config.PASSWORD)
 
         debug_wait()
 
@@ -183,6 +185,9 @@ try:
         WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
         debug_wait()
+    except TimeoutException:
+        # パスワードの入力が求められていないため何もしない
+        pass
 
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 

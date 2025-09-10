@@ -18,6 +18,7 @@ TOPPAGE_URL = 'https://www.uber.com/global/ja/sign-in/'
 SMS_CODE_LEN = 4
 WAIT_TIMEOUT_SEC = 30
 PASSWORD_TIMEOUT_SEC = 3
+MENU_TIMEOUT_SEC = 3
 SLEEP_TIME_SEC = 3
 field_names = [
     'delivery_date',
@@ -198,11 +199,11 @@ try:
         selector = 'div[data-testid="responsive-desktop-nav"] button[data-tracking-alias="loggedin drawer activated"]'
 
     # ユーザメニューを表示
-    user_menu = driver.find_elements(By.CSS_SELECTOR, selector)
-    if user_menu:
-        user_menu[0].click()
+    try:
+        user_menu = WebDriverWait(driver, MENU_TIMEOUT_SEC).until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+        user_menu.click()
         WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
-    else:
+    except TimeoutException:
         input('手動でユーザメニューを表示させてください >')
 
     debug_wait()

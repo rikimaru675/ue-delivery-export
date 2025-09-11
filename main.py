@@ -20,19 +20,19 @@ WAIT_TIMEOUT_SEC = 30
 PASSWORD_TIMEOUT_SEC = 3
 MENU_TIMEOUT_SEC = 3
 SLEEP_TIME_SEC = 3
-field_names = [
-    'delivery_date',
-    'delivery_count',
-    'delivery_time',
-    'ride_time',
-    'ride_distance',
-    'estimated_amount',
-    'adjustment_amount',
-    'tip_amount',
-    'sales_amount',
-    'pick_location',
-    'drop_location',
-    'detail_url',
+CSV_FIELD_NAMES = [
+    '配達日',
+    '配達件数',
+    '配達時刻',
+    '乗車時間',
+    '乗車距離',
+    '見積料金',
+    '調整金',
+    'チップ',
+    '売り上げ',
+    'ピック場所',
+    'ドロップ場所',
+    '詳細表示URL',
 ]
 
 # デバッグ用にステップ実行
@@ -399,18 +399,18 @@ try:
         debug_wait()
 
         # 取得データを格納
-        detail_result['delivery_date'] = delivery_date
-        detail_result['delivery_count'] = delivery_count
-        detail_result['delivery_time'] = delivery_time
-        detail_result['ride_time'] = ride_time
-        detail_result['ride_distance'] = ride_distance
-        detail_result['estimated_amount'] = estimated_amount
-        detail_result['adjustment_amount'] = adjustment_amount
-        detail_result['tip_amount'] = tip_amount
-        detail_result['sales_amount'] = sales_amount
-        detail_result['pick_location'] = pick_location
-        detail_result['drop_location'] = drop_location
-        detail_result['detail_url'] = detail_url
+        detail_result['配達日'] = delivery_date
+        detail_result['配達件数'] = delivery_count
+        detail_result['配達時刻'] = delivery_time
+        detail_result['乗車時間'] = ride_time
+        detail_result['乗車距離'] = ride_distance
+        detail_result['見積料金'] = estimated_amount
+        detail_result['調整金'] = adjustment_amount
+        detail_result['チップ'] = tip_amount
+        detail_result['売り上げ'] = sales_amount
+        detail_result['ピック場所'] = pick_location
+        detail_result['ドロップ場所'] = drop_location
+        detail_result['詳細表示URL'] = detail_url
         delivery_results.append(detail_result)
 
         # 詳細ページのタブを閉じる
@@ -424,7 +424,7 @@ try:
         debug_wait()
 
     # ファイル出力
-    output_to_csv(field_names, delivery_results)
+    output_to_csv(CSV_FIELD_NAMES, delivery_results)
 
     debug_wait()
 

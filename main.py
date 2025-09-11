@@ -43,9 +43,9 @@ def debug_wait():
 
 # ウィンドウ幅でモバイルか否かを判定する
 def is_mobile_view(driver):
-    size = 768  # 必要に応じて調整
+    size = 1136  # Webページ側のCSS設定値に合わせる
     width = driver.execute_script("return window.innerWidth;")
-    return width <= size
+    return width < size
 
 # 英語日付表記(3rd April 2025)をYYYYMMDD表記(2025/04/03)に変換する
 def english_date_to_yyyymmdd(english_date_str):

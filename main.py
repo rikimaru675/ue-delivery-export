@@ -225,13 +225,17 @@ try:
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
     # 売上結果をすべて読み込む
-    while len(driver.find_elements(By.CSS_SELECTOR, 'button[data-baseweb="button"]._css-ATGrN')) > 0:
-        # 【さらに読み込む】ボタンをクリック
-        read_more = driver.find_element(By.CSS_SELECTOR, 'button[data-baseweb="button"]._css-ATGrN')
-        read_more.click()
-        WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
-        time.sleep(SLEEP_TIME_SEC)
-        debug_wait()
+    while True:
+        try:
+            # 【さらに読み込む】ボタンをクリック
+            read_more = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.CSS_SELECTOR,'button[aria-label="さらに読み込む"]')))
+            read_more.click()
+            WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
+            time.sleep(SLEEP_TIME_SEC)
+            debug_wait()
+        except TimeoutException:
+            # 【さらに読み込む】ボタンがないので何もしない
+            break
 
     # 売上の行をすべて取得する
     rows = driver.find_elements(By.CSS_SELECTOR, 'table._css-jkqalI tbody tr')

@@ -93,69 +93,60 @@ def output_to_csv(field, row_data):
         writer.writeheader()
         writer.writerows(row_data)
 
+def create_configured_driver():
+    options = Options()
+    # シークレットモード
+    # options.add_argument('--incognito')
+    # 起動時に最大化
+    options.add_argument("--start-maximized")
+    # Chromeは自動テスト ソフトウェア~~　を非表示
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    # 自動化ツールとしての検出を避ける設定
+    options.add_experimental_option('useAutomationExtension', False)
 
+    # WebDriver起動
+    driver = webdriver.Chrome(options=options)
+    # webdriver検知を回避するスクリプト注入
+    driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+        'source': '''
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        '''
+    })
+    return driver
 
-options = Options()
-# シークレットモード
-# options.add_argument('--incognito')
-# 起動時に最大化
-options.add_argument("--start-maximized")
-# Chromeは自動テスト ソフトウェア~~　を非表示
-options.add_experimental_option('excludeSwitches', ['enable-automation'])
-# 自動化ツールとしての検出を避ける設定
-options.add_experimental_option('useAutomationExtension', False)
+def quit_driver(driver):
+    if driver is not None:
+        driver.quit()
 
-# WebDriver起動
-driver = webdriver.Chrome(options=options)
-debug_wait()
-# webdriver検知を回避するスクリプト注入
-driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-    'source': '''
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => undefined
-        });
-    '''
-})
-
-# 結果格納用
-delivery_results = []
-
-try:
-    # トップ画面
-    driver.get(TOPPAGE_URL)
-    WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
-
-    debug_wait()
-
+def click_sign_in(driver):
     # サインインをクリック
     sign_in = driver.find_element(By.LINK_TEXT, 'サインイン')
     sign_in.click()
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    debug_wait()
-
+def set_email(driver, email_str):
     # 電話番号またはメールアドレス入力画面
     # メールアドレスを入力
     email = driver.find_element(By.ID, 'PHONE_NUMBER_or_EMAIL_ADDRESS')
-    email.send_keys(config.EMAIL_ADDRESS)
-
-    debug_wait()
+    email.send_keys(email_str)
 
     # 続行ボタンをクリック
     button = driver.find_element(By.ID, 'forward-button')
     button.click()
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    debug_wait()
-
-    # SMSコード入力画面
+def get_sms_code():
     while True:
         sms_code = input('Uberから通知された4桁の数字を【半角】で入力してください：')
         sms_code = sms_code.lower()
         if (len(sms_code) == SMS_CODE_LEN) and (sms_code.isdigit()):
-            break
+            return sms_code
 
-    debug_wait()
+def verify_sms_code(driver):
+    # SMSコード入力画面
+    sms_code = get_sms_code()
 
     codes = list(sms_code)
     code0 = driver.find_element(By.ID, 'PHONE_SMS_OTP-0')
@@ -170,29 +161,24 @@ try:
     # コードを入力すると自動的に次のページへ遷移する
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    debug_wait()
-
+def verify_password(driver, password_str):
     ##### パスワード入力画面
     try:
         # パスワードの入力フォームがあればパスワードを入力する
         password = WebDriverWait(driver, PASSWORD_TIMEOUT_SEC).until(EC.presence_of_element_located((By.ID, 'PASSWORD')))
-        password.send_keys(config.PASSWORD)
-
-        debug_wait()
+        password.send_keys(password_str)
 
         button = driver.find_element(By.ID, 'forward-button')
         button.click()
 
         WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
-
-        debug_wait()
     except TimeoutException:
         # パスワードの入力が求められていないため何もしない
         pass
 
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    ##### 稼働と乗車画面 #####
+def display_user_menu(driver):
     if is_mobile_view(driver):
         selector = 'div[data-testid="responsive-mobile-nav"] button[data-tracking-alias="loggedin drawer activated"]'
     else:
@@ -206,8 +192,7 @@ try:
     except TimeoutException:
         input('手動でユーザメニューを表示させてください >')
 
-    debug_wait()
-
+def click_drive_and_delivery(driver):
     # 運転と配達をクリック
     drive_delivery = driver.find_elements(By.CSS_SELECTOR, 'div[data-baseweb="popover"] a[aria-label="運転と配達"][href="https://drivers.uber.com/"]')
     if drive_delivery:
@@ -217,13 +202,11 @@ try:
 
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    debug_wait()
-
-    ##### Uberでの売上画面 #####
-
+def select_week(driver):
     input('ブラウザ上で【週で検索】をクリックして取得するデータの週を選択してください >')
     WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
+def read_more_delivery_results(driver):
     # 売上結果をすべて読み込む
     while True:
         try:
@@ -232,17 +215,17 @@ try:
             read_more.click()
             WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
             time.sleep(SLEEP_TIME_SEC)
-            debug_wait()
         except TimeoutException:
             # 【さらに読み込む】ボタンがないので何もしない
             break
 
+def get_delivery_results(driver):
+    delivery_results = []
     # 売上の行をすべて取得する
     rows = driver.find_elements(By.CSS_SELECTOR, 'table._css-jkqalI tbody tr')
     for row in reversed(rows):  # リストは日時が新しいものから並んでおり、古いものから順に取得するためにreversed()を使用
         # イベント名
         event_name = row.find_element(By.CSS_SELECTOR, 'td:nth-child(1) p').text.strip()
-        debug_wait()
 
         # イベント名が【Delivery】以外は除外する
         if (event_name != 'Delivery'):
@@ -251,16 +234,13 @@ try:
         # 日時（date + time）
         date_text = row.find_element(By.CSS_SELECTOR, 'td:nth-child(2) p:nth-child(1)').text.strip()
         time_text = row.find_element(By.CSS_SELECTOR, 'td:nth-child(2) p:nth-child(2)').text.strip()
-        debug_wait()
 
         # 売り上げ（通貨付き文字列）
         earnings = row.find_element(By.CSS_SELECTOR, 'td:nth-child(3) p').text.strip()
-        debug_wait()
 
         # 詳細ページのリンク
         link_element = row.find_element(By.CSS_SELECTOR, 'td:nth-child(4) a')
         detail_url = link_element.get_attribute('href')
-        debug_wait()
 
         # 詳細ページを新しいタブで開く
         if (link_element.get_attribute('target') == '_blank'):
@@ -278,7 +258,6 @@ try:
         # 詳細ページのタブが開くまで待機
         WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.number_of_windows_to_be(2))
         WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
-        debug_wait()
 
         # 詳細ページタブに切り替える
         handles = driver.window_handles
@@ -286,13 +265,11 @@ try:
 
         # 詳細ページを一定時間表示させる
         time.sleep(SLEEP_TIME_SEC)
-        debug_wait()
 
         # 詳細ページのHTML取得
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
 
-        debug_wait()
         detail_result = {}
 
         # 日時
@@ -311,8 +288,6 @@ try:
             delivery_date = ''
             delivery_time = ''
 
-        debug_wait()
-
         # 売上金額
         element = soup.find('h2', string=re.compile(r'￥'))
         if element:
@@ -320,8 +295,6 @@ try:
             sales_amount = int(re.sub(r'[￥,]', '', text))
         else:
             sales_amount = 0
-
-        debug_wait()
 
         # 見積金額
         element = soup.find(string=re.compile(r'このサービスの見積もり料金は'))
@@ -332,8 +305,6 @@ try:
         else:
             estimated_amount = 0
 
-        debug_wait()
-
         # 乗車時間
         element = soup.find(string=re.compile(r'\d+\s*分\s*\d+\s*秒'))
         if element:
@@ -341,8 +312,6 @@ try:
             ride_time = convert_to_hmmss(text)
         else:
             ride_time = '0:00:00'
-
-        debug_wait()
 
         # 乗車距離
         element = soup.find(string=re.compile(r'\d+\.\d+\s*km'))
@@ -352,26 +321,18 @@ try:
         else:
             ride_distance = 0.0
 
-        debug_wait()
-
         # aria-label属性をすべて抽出
         aria_labels = soup.find_all(attrs={"aria-label": True})
-
-        debug_wait()
 
         # ピック場所
         pick_location = ''
         if len(aria_labels) > 0:
             pick_location = aria_labels[0]['aria-label']
 
-        debug_wait()
-
         # ドロップ場所
         drop_location = ''
         if len(aria_labels) > 1:
             drop_location = aria_labels[1]['aria-label']
-
-        debug_wait()
 
         # 件数
         delivery_count = 0
@@ -381,8 +342,6 @@ try:
                 text = re.search(r'\d+', match.group()).group()
                 delivery_count = int(text)
 
-        debug_wait()
-
         # チップ
         tip_amount = 0
         if len(aria_labels) > 3:
@@ -391,12 +350,8 @@ try:
                 text = match.group(1).replace(',', '')
                 tip_amount = int(text)
 
-        debug_wait()
-
         # 調整金（マイナス値も許容する）
         adjustment_amount = sales_amount - estimated_amount - tip_amount
-
-        debug_wait()
 
         # 取得データを格納
         detail_result['配達日'] = delivery_date
@@ -416,38 +371,71 @@ try:
         # 詳細ページのタブを閉じる
         driver.close()
 
-        debug_wait()
-
         # 元のタブに戻る
         driver.switch_to.window(handles[0])
 
-        debug_wait()
+    return delivery_results
 
-    # ファイル出力
-    output_to_csv(CSV_FIELD_NAMES, delivery_results)
+def top_screen(driver, toppage_url):
+    driver.get(toppage_url)
+    WebDriverWait(driver, WAIT_TIMEOUT_SEC).until(EC.presence_of_all_elements_located)
 
-    debug_wait()
+def sign_in(driver):
+    click_sign_in(driver)
+    set_email(driver, config.EMAIL_ADDRESS)
+    verify_sms_code(driver)
+    verify_password(driver, config.PASSWORD)
 
+def operation_screen(driver):
+    display_user_menu(driver)
+    click_drive_and_delivery(driver)
+
+def delivery_results_screen(driver):
+    select_week(driver)
+    read_more_delivery_results(driver)
+    return get_delivery_results(driver)
+
+def sign_out(driver):
+    # TODO サインアウトメニューを表示できるように要対応
     # サインアウト
     # メニューボタンをクリック
     # menu_button = driver.find_element(By.XPATH, '//*[@id="wrapper"]/div[1]/div[1]/div/button')
     # menu_button.click()
 
-    debug_wait()
-
-    # TODO サインアウトメニューを表示できるように要対応
     # user_button = driver.find_element(By.XPATH, '//*[@id="bui8val-0"]')
     # user_button.click()
 
-    debug_wait()
-
     # logout_button = driver.find_element(By.XPATH, '//*[@id="bui8val-5"]')
     # logout_button.click()
+    pass
 
-except Exception as e:
-    print(e)
-finally:
-    driver.quit()
+def main():
+    driver = create_configured_driver()
+    try:
+        ##### トップ画面 #####
+        top_screen(driver, TOPPAGE_URL)
 
+        ##### サインイン  #####
+        sign_in(driver)
 
+        #####  稼働と乗車画面 #####
+        operation_screen(driver)
+
+        ##### 売上画面 #####
+        delivery_results = delivery_results_screen(driver)
+
+        ##### ファイル出力 #####
+        output_to_csv(CSV_FIELD_NAMES, delivery_results)
+
+        ##### サインアウト #####
+        sign_out(driver)
+    except Exception as e:
+        print(e)
+    finally:
+        quit_driver(driver)
+        driver = None
+
+##### メイン処理 #####
+if __name__ == '__main__':
+    main()
 

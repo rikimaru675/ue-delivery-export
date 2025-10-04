@@ -180,9 +180,9 @@ def verify_password(driver, password_str):
 
 def display_user_menu(driver):
     if is_mobile_view(driver):
-        selector = 'div[data-testid="responsive-mobile-nav"] button[data-tracking-alias="loggedin drawer activated"]'
+        selector = 'div[data-testid="responsive-mobile-nav"] button[aria-label="loggedIn drawer"]'
     else:
-        selector = 'div[data-testid="responsive-desktop-nav"] button[data-tracking-alias="loggedin drawer activated"]'
+        selector = 'div[data-testid="responsive-desktop-nav"] button[aria-label="loggedIn drawer"]'
 
     # ユーザメニューを表示
     try:

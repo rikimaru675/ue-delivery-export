@@ -81,7 +81,10 @@ class UeScraper:
         )
 
     def _click_sign_in(self):
-        self.driver.find_element(By.LINK_TEXT, 'サインイン').click()
+        sign_in = WebDriverWait(self.driver, self.TIMEOUTS_SEC['wait']).until(
+                EC.element_to_be_clickable((By.LINK_TEXT, 'サインイン'))
+        )
+        sign_in.click()
         WebDriverWait(self.driver, self.TIMEOUTS_SEC['wait']).until(
             EC.presence_of_all_elements_located((By.TAG_NAME, 'body'))
         )

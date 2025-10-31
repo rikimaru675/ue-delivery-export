@@ -239,11 +239,25 @@ class UeScraper:
         element = soup.find('p', string=re.compile(r'Delivery\s+•'))
         if element:
             text = element.text.strip()
-            date_match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日\s*•\s*(\d{1,2}:\d{2})', text)
+            date_match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日\s*•\s*(午前|午後)(\d{1,2})時(\d{2})分', text)
             if date_match:
-                yyyy, mm, dd, time_part = date_match.groups()
-                data['配達日'] = f"{int(yyyy):04d}/{int(mm):02d}/{int(dd):02d}"
-                data['配達時刻'] = time_part
+                year   = int(date_match.group(1))
+                month  = int(date_match.group(2))
+                day    = int(date_match.group(3))
+                period = str(date_match.group(4))
+                hour   = int(date_match.group(5))
+                minute = int(date_match.group(6))
+                # 午後の場合は12を足す、ただし午後12時は何もしない
+                if period == '午後' and hour != 12:
+                    hour += 12
+                # 午前12時の場合は0時とする
+                elif period == '午前' and hour == 12:
+                    hour = 0
+                # その他は何もしない
+                else:
+                    pass
+                data['配達日'] = f"{year:04d}/{month:02d}/{day:02d}"
+                data['配達時刻'] = f"{hour:02d}:{minute:02d}"
 
         # 売上金額
         data['売り上げ'] = 0
